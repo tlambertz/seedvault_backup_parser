@@ -116,8 +116,24 @@ def parse_full_app_backups(backupfolder, targetfolder, userkey):
             print("\n\n\n")
 
 
+def parse_metadata(backupfolder, targetfolder, key):
+    with open(f"{backupfolder}/.backup.metadata", "rb") as f:
+        ct = f.read()
+
+    version = ct[0]
+    assert version == 0
+    pt = decrypt_segments(ct[1:], key)
+
+    if targetfolder:
+        with open(f"{targetfolder}/.backup.metadata", "wb") as f:
+            f.write(pt)
+    else:
+        print("Metadata:")
+        print(pt)
+
 # parses everything
 def parse_backup(backupfolder, targetfolder, key):
+    parse_metadata(backupfolder, targetfolder, key)
     parse_apk_backup(backupfolder)
 
     kv_parsed = parse_kv_backup(backupfolder, targetfolder, key)
@@ -188,6 +204,26 @@ def aes_decrypt(ct, key, iv):
     return pt
 
 
+# encrypt a ciphertext with aesgcm. Last 16 bytes of ct are tag
+def aes_encrypt(pt, key, iv):
+    TAG_LEN = 128//8
+    cipher = AES.new(key, AES.MODE_GCM, nonce=iv)
+    ct, tag = cipher.encrypt_and_digest(pt)
+    return ct + tag
+
+
+# encrypts a segment, creates random iv and correct header
+def encrypt_segment(pt, key):
+    # create segment header
+    assert len(pt) + 16 < 2**16
+    header = struct.pack(">H", len(pt) + 16)
+    iv = os.urandom(12) # random IV
+    header += iv
+
+    ct = aes_encrypt(pt, key, iv)
+    
+    return header + ct
+
 # Version Header is:
 # 1 Byte  - Version
 # 2 Bytes - Packagename length x
@@ -210,6 +246,62 @@ def parse_versionheader(vb):
     }
 
 
+def create_versionheader(appname, key):
+    data = b"\0" # version
+    assert len(appname) < 255
+    data += struct.pack(">H", len(appname))
+    data += appname.encode()
+    data += struct.pack(">H", len(key))
+    data += key
+    return data
+
+
+# reencrypts key-value pairs from a decrypted backup, so they can be flashed to the device
+def encrypt_backup(plainfolder, targetfolder, userkey):
+    assert targetfolder
+
+    os.makedirs(f"{targetfolder}/kv", exist_ok=True)
+    kvs = sorted(glob.glob(f"{plainfolder}/kv/*"))
+
+    print("Encrypting Key-Value files: ")
+    for kv in kvs:
+        appname = "/".join(kv.split("/")[2:])
+        print("  for app "+appname, kv)
+        pairsb64 = glob.glob(kv+"/*")
+        os.makedirs(f"{targetfolder}/kv/{appname}", exist_ok=True)
+
+        for p in pairsb64:
+            with open(p, "rb") as f:
+                pt = f.read()
+
+            # file has to have an _ followed by the base64 of the key!
+            keyb64 = p.split("_")[-1]
+            key = b64decode(keyb64)
+            print("    ", key)
+            
+            ct = b""
+            # version is 0
+            ct += b"\0"
+
+            versionheader_bytes = create_versionheader(appname, key)
+            ct += encrypt_segment(versionheader_bytes, userkey)
+            # encrypt the plaintext
+            ct += encrypt_segment(pt, userkey)
+    
+            with open(f"{targetfolder}/kv/{appname}/{keyb64.replace('=', '')}", "wb") as f:
+                f.write(ct)
+
+    print("Encrypting Metadata file")
+    with open(f"{plainfolder}/.backup.metadata", "rb") as f:
+        meta = f.read()
+
+    metac = b"\0" + encrypt_segment(meta, userkey)
+    with open(f"{targetfolder}/.backup.metadata", "wb") as f:
+        f.write(metac)
+
+    print("Done.")
+
+
 # generate the key from a user-input mnemnonic phrase
 # uses the same algorithms as seedvault, see
 # https://github.com/NovaCrypto/BIP39/blob/master/src/main/java/io/github/novacrypto/bip39/SeedCalculator.java
@@ -228,6 +320,7 @@ def main():
     if len(sys.argv) < 3:
         print("Usage: %s SHOW    [BACKUPFOLDER]" % sys.argv[0])
         print("       %s DECRYPT [BACKUPFOLDER] [TARGETFOLDER]" % sys.argv[0])
+        print("       %s ENCRYPT [PLAINFOLDER]  [TARGETFOLDER] (only KV support right now)" % sys.argv[0])
         sys.exit(-1)
 
     backupfolder = sys.argv[2]
@@ -235,13 +328,21 @@ def main():
     if sys.argv[1].lower() == "show":
         targetfolder = None
         print(f"Parsing backup {backupfolder}")
+        userkey = get_key()
+        kv_parsed = parse_backup(backupfolder, targetfolder, userkey)
+
     elif sys.argv[1].lower() == "decrypt":
         targetfolder = sys.argv[3]
         print(f"Decrypting backup from {backupfolder} into {targetfolder}")
+        userkey = get_key()
+        kv_parsed = parse_backup(backupfolder, targetfolder, userkey)
 
-
-    userkey = get_key()
-    kv_parsed = parse_backup(backupfolder, targetfolder, userkey)
+    elif sys.argv[1].lower() == "encrypt":
+        plainfolder = sys.argv[2]
+        targetfolder = sys.argv[3]
+        print(f"Encrypting backup from {plainfolder} into {targetfolder}")
+        userkey = get_key()
+        kv_parsed = encrypt_backup(plainfolder, targetfolder, userkey)
 
 
 if __name__ == "__main__":

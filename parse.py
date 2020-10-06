@@ -7,15 +7,17 @@ import string
 import struct
 import hashlib
 from Crypto.Cipher import AES
-from base64 import b64decode, b64encode
+from base64 import urlsafe_b64decode, urlsafe_b64encode
 
+# separator can't be in urlsafe b64 alphabet. -> no A-Za-Z0-9-_ -> choose .
+B64_SEPARATOR = "."
 
 # parses file-path, where file is a base64 encoded key into the decoded filename
 def filepath_to_key(filepath):
     filename = filepath.split("/")[-1]
 
     # seedvault removes padding =, add them back, else python complains
-    return b64decode(filename + "=" * ((4 - len(filename) % 4) % 4))
+    return urlsafe_b64decode(filename + "=" * ((4 - len(filename) % 4) % 4))
 
 
 # parses key-value pairs stored in the "kv" subfolder
@@ -47,7 +49,7 @@ def parse_kv_backup(backupfolder, targetfolder, userkey):
                 ct = f.read()
 
             key = filepath_to_key(p)
-            b64 = b64encode(key)
+            b64 = urlsafe_b64encode(key)
             version = ct[0]
             ct = ct[1:]
             assert version == 0 # only version 0 supported
@@ -68,7 +70,7 @@ def parse_kv_backup(backupfolder, targetfolder, userkey):
                 # we need to save as b64, since some keys contain "/" etc
                 whitelist = string.ascii_letters + string.digits + '.'
                 cleanname = re.sub(f'[^{whitelist}]', '', key.decode())
-                with open(f"{targetfolder}/kv/{appname}/{cleanname}_{b64.decode()}", "wb") as f:
+                with open(f"{targetfolder}/kv/{appname}/{cleanname}{B64_SEPARATOR}{b64.decode()}", "wb") as f:
                     f.write(data)
 
             pairs[key] = data
@@ -274,9 +276,10 @@ def encrypt_backup(plainfolder, targetfolder, userkey):
             with open(p, "rb") as f:
                 pt = f.read()
 
-            # file has to have an _ followed by the base64 of the key!
-            keyb64 = p.split("_")[-1]
-            key = b64decode(keyb64)
+            # file has to have an B64_SEPARATOR followed by the base64 of the key!
+            keyb64 = p.split(B64_SEPARATOR)[-1]
+            print(keyb64)
+            key = urlsafe_b64decode(keyb64)
             print("    ", key)
             
             ct = b""

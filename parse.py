@@ -318,7 +318,11 @@ def get_key():
     rounds = 2048
     keysize = 256
 
-    mnemonic = getpass.getpass("Please enter mnemonic: ").encode()
+    vis = input("Should mnemonic be visible while typing? [y/n]: ")
+    if vis.lower().startswith("y"):
+        mnemnonic = input("Please enter mnemonic: ").encode()
+    else:
+        mnemonic = getpass.getpass("Please enter mnemonic: ").encode()
     key = hashlib.pbkdf2_hmac("sha512", mnemonic, salt, rounds)
     return key[:keysize//8]
 

@@ -2,6 +2,7 @@
 import re
 import os
 import sys
+import getpass
 import glob
 import string
 import struct
@@ -135,6 +136,9 @@ def parse_metadata(backupfolder, targetfolder, key):
 
 # parses everything
 def parse_backup(backupfolder, targetfolder, key):
+    if targetfolder:
+        os.mkdirs(targetfolder)
+    
     parse_metadata(backupfolder, targetfolder, key)
     parse_apk_backup(backupfolder)
 
@@ -314,7 +318,11 @@ def get_key():
     rounds = 2048
     keysize = 256
 
-    mnemonic = input("Please enter mnemonic: ").encode()
+    vis = input("Should mnemonic be visible while typing? [y/n]: ")
+    if vis.lower().startswith("y"):
+        mnemnonic = input("Please enter mnemonic: ").encode()
+    else:
+        mnemonic = getpass.getpass("Please enter mnemonic: ").encode()
     key = hashlib.pbkdf2_hmac("sha512", mnemonic, salt, rounds)
     return key[:keysize//8]
 

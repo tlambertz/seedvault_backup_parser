@@ -309,7 +309,7 @@ def encrypt_backup(plainfolder, targetfolder, userkey):
     print("Done.")
 
 
-# generate the key from a user-input mnemnonic phrase
+# generate the key from a user-input mnemonic phrase
 # uses the same algorithms as seedvault, see
 # https://github.com/NovaCrypto/BIP39/blob/master/src/main/java/io/github/novacrypto/bip39/SeedCalculator.java
 # https://github.com/NovaCrypto/BIP39/blob/master/src/main/java/io/github/novacrypto/bip39/JavaxPBKDF2WithHmacSHA512.java
@@ -320,7 +320,7 @@ def get_key():
 
     vis = input("Should mnemonic be visible while typing? [y/n]: ")
     if vis.lower().startswith("y"):
-        mnemnonic = input("Please enter mnemonic: ").encode()
+         mnemonic = input("Please enter mnemonic: ").encode()
     else:
         mnemonic = getpass.getpass("Please enter mnemonic: ").encode()
     key = hashlib.pbkdf2_hmac("sha512", mnemonic, salt, rounds)

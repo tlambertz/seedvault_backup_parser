@@ -8,7 +8,7 @@ Release:        %{mybuildnumber}%{?dist}
 Summary:        Parse Seedvault backups
 BuildArch:      noarch
 
-License:        GPLv2+
+License:        Apache 2.0
 URL:            https://github.com/tlambertz/seedvault_backup_parser
 Source0:        %{name}-%{version}.tar.gz
 

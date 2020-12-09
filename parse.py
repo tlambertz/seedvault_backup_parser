@@ -13,6 +13,7 @@ from base64 import urlsafe_b64decode, urlsafe_b64encode
 # separator can't be in urlsafe b64 alphabet. -> no A-Za-Z0-9-_ -> choose .
 B64_SEPARATOR = "."
 
+
 # parses file-path, where file is a base64 encoded key into the decoded filename
 def filepath_to_key(filepath):
     filename = filepath.split("/")[-1]
@@ -23,7 +24,7 @@ def filepath_to_key(filepath):
 
 # parses key-value pairs stored in the "kv" subfolder
 # see KVBackup.kt
-def parse_kv_backup(backupfolder, targetfolder, userkey):    
+def parse_kv_backup(backupfolder, targetfolder, userkey):
     kvs = sorted(glob.glob(f"{backupfolder}/kv/*"))
     #print("Found kv folders: ")
     #for kv in kvs:
@@ -66,7 +67,7 @@ def parse_kv_backup(backupfolder, targetfolder, userkey):
 
             # parse all remaining segments
             data = decrypt_segments(ct, userkey)
-            
+
             if targetfolder:
                 # we need to save as b64, since some keys contain "/" etc
                 whitelist = string.ascii_letters + string.digits + '.'
@@ -76,7 +77,7 @@ def parse_kv_backup(backupfolder, targetfolder, userkey):
 
             pairs[key] = data
             #print(key, data, b64)
-        
+
         kv_parsed[appname] = pairs
 
     return kv_parsed
@@ -134,11 +135,12 @@ def parse_metadata(backupfolder, targetfolder, key):
         print("Metadata:")
         print(pt)
 
+
 # parses everything
 def parse_backup(backupfolder, targetfolder, key):
     if targetfolder:
-        os.mkdirs(targetfolder)
-    
+        os.makedirs(targetfolder, exist_ok=True)
+
     parse_metadata(backupfolder, targetfolder, key)
     parse_apk_backup(backupfolder)
 
@@ -183,7 +185,7 @@ def decrypt_segment(ct, key):
 
     # use iv from segment header to decrypt
     pt = aes_decrypt(ct, key, iv)
-    
+
     #print(length, iv, ct)
     return pt, remainder
 
@@ -195,6 +197,7 @@ def decrypt_segments(ct, key):
         pt, ct = decrypt_segment(ct, key)
         data += pt
     return data
+
 
 # decrypt a ciphertext with aesgcm and verify its tag. Last 16 bytes of ct are tag
 def aes_decrypt(ct, key, iv):
@@ -227,8 +230,9 @@ def encrypt_segment(pt, key):
     header += iv
 
     ct = aes_encrypt(pt, key, iv)
-    
+
     return header + ct
+
 
 # Version Header is:
 # 1 Byte  - Version
@@ -236,7 +240,7 @@ def encrypt_segment(pt, key):
 # x Bytes - Packagename
 # 2 Bytes - Keyname length y
 # y Bytes - Keyname
-# 
+#
 # see HeaderWriter.kt
 def parse_versionheader(vb):
     version = vb[0]
@@ -285,7 +289,7 @@ def encrypt_backup(plainfolder, targetfolder, userkey):
             print(keyb64)
             key = urlsafe_b64decode(keyb64)
             print("    ", key)
-            
+
             ct = b""
             # version is 0
             ct += b"\0"
@@ -294,7 +298,7 @@ def encrypt_backup(plainfolder, targetfolder, userkey):
             ct += encrypt_segment(versionheader_bytes, userkey)
             # encrypt the plaintext
             ct += encrypt_segment(pt, userkey)
-    
+
             with open(f"{targetfolder}/kv/{appname}/{keyb64.replace('=', '')}", "wb") as f:
                 f.write(ct)
 

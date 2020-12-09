@@ -106,9 +106,18 @@ def parse_full_app_backups(backupfolder, targetfolder, userkey):
             ct = f.read()
 
         #key = filepath_to_key(p)
+        #b64 = urlsafe_b64encode(key)
         version = ct[0]
         ct = ct[1:]
-        assert version == 0 # only version 0 supporte
+        assert version == 0 # only version 0 supported
+
+        versionheader_bytes, ct = decrypt_segment(ct, userkey)
+        versionheader = parse_versionheader(versionheader_bytes, False)
+
+        # if decrypted versionheader does not match folder/filename, something has gone wrong
+        #print(versionheader, appname, filepath_to_key(p))
+        assert versionheader['name'].decode() == appname
+        assert versionheader['version'] == version
 
         # parse all remaining segments
         data = decrypt_segments(ct, userkey)
@@ -242,13 +251,15 @@ def encrypt_segment(pt, key):
 # y Bytes - Keyname
 #
 # see HeaderWriter.kt
-def parse_versionheader(vb):
+def parse_versionheader(vb, include_key=True):
     version = vb[0]
     namelen = struct.unpack(">H", vb[1:3])[0]
     name = vb[3:3+namelen]
-    keylen = struct.unpack(">H", vb[3+namelen:3+namelen+2])[0]
-    assert len(vb) == namelen + keylen + 2 + 2 + 1
-    key = vb[3+2+namelen:]
+    key = None
+    if include_key:
+      keylen = struct.unpack(">H", vb[3+namelen:3+namelen+2])[0]
+      assert len(vb) == namelen + keylen + 2 + 2 + 1
+      key = vb[3+2+namelen:]
     return {
         "version": version,
         "name": name,
@@ -256,13 +267,14 @@ def parse_versionheader(vb):
     }
 
 
-def create_versionheader(appname, key):
+def create_versionheader(appname, key=None):
     data = b"\0" # version
     assert len(appname) < 255
     data += struct.pack(">H", len(appname))
     data += appname.encode()
-    data += struct.pack(">H", len(key))
-    data += key
+    if key:
+        data += struct.pack(">H", len(key))
+        data += key
     return data
 
 

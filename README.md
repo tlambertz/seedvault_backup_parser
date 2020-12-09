@@ -12,6 +12,8 @@ To decrypt a backup stored in the folder `1601080173780` into `decrypted`, run
 ./parse.py decrypt 1601080173780 decrypted
 ```
 
+N.B. the directory names must not have trailing `/` or extraction will fail.
+
 The script will ask for your 12 word mnemonic key at runtime. It has to be lowercase, words separated by a single space.
 Example:
 
@@ -19,6 +21,7 @@ Example:
 fish test thing gift mercy siren erode acoustic mango veteran soup bus
 ```
 
+The files created in the `full` directory are tar files and can be extracted with `tar -tvf`.
 
 ## Wifi Key Import
 You can create a backup, modify it, and restore it back to the device. This allows to bulk-add wifi passwords without root access.

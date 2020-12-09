@@ -1,6 +1,6 @@
 # SeedVault Backup Parser
 
-This is a tool to decrypt and re-encrypt the android backups make by [Seedvault](https://github.com/stevesoltys/seedvault/).
+This is a tool to decrypt and (partially) re-encrypt the android backups make by [Seedvault](https://github.com/stevesoltys/seedvault/).
 
 ## Requirements
 For the AES decryption, the python dependency `pycryptodome` is needed.
@@ -22,6 +22,8 @@ fish test thing gift mercy siren erode acoustic mango veteran soup bus
 ```
 
 The files created in the `full` directory are tar files and can be extracted with `tar -tvf`.
+
+Re-encryption is currently only implemented for the key-value part of backups, not for the full app backups.
 
 ## Wifi Key Import
 You can create a backup, modify it, and restore it back to the device. This allows to bulk-add wifi passwords without root access.

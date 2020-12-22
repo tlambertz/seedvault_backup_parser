@@ -33,7 +33,7 @@ def parse_kv_backup(backupfolder, targetfolder, userkey):
     print("Decrypting Key-Value files: ")
     kv_parsed = {}
     for kv in kvs:
-        appname = "/".join(kv.split("/")[2:])
+        appname = "/".join(kv.split("/")[-1:])
         print("  for app "+appname)
         pairsb64 = glob.glob(kv+"/*")
 
@@ -99,7 +99,7 @@ def parse_full_app_backups(backupfolder, targetfolder, userkey):
     fulls = sorted(glob.glob(f"{backupfolder}/full/*"))
     print("Decrypting full backup for apps: ")
     for full in fulls:
-        appname = "/".join(full.split("/")[2:])
+        appname = "/".join(full.split("/")[-1:])
         print("  "+appname)
 
         with open(full, "rb") as f:

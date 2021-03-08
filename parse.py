@@ -7,7 +7,20 @@ import glob
 import string
 import struct
 import hashlib
-from Crypto.Cipher import AES
+
+# debian does not ship pycryptodome under the pycrypto namespace. Try both.
+# See Issue #8
+try:
+    from Crypto.Cipher import AES
+    AES.MODE_GCM
+except:
+    try:
+        from Cryptodome.Cipher import AES
+        AES.MODE_GCM
+    except:
+        print("ERROR: Please install pycryptodome.")
+        exit(-1)
+
 from base64 import urlsafe_b64decode, urlsafe_b64encode
 
 # separator can't be in urlsafe b64 alphabet. -> no A-Za-Z0-9-_ -> choose .

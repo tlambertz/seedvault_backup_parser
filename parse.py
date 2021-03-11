@@ -199,7 +199,7 @@ def print_kv_pairs(kv):
 # x  Bytes - Encrypted Data (of which last 16 bytes are aes-gcm-tag)
 def decrypt_segment(ct, key):
     # parse segment header to get iv and segment length
-    length = struct.unpack(">H", ct[:2])[0]
+    length = struct.unpack(">h", ct[:2])[0]
     assert len(ct[2:]) >= length
     remainder = ct[2+12+length:]
     iv = ct[2:2+12]
@@ -246,8 +246,10 @@ def aes_encrypt(pt, key, iv):
 # encrypts a segment, creates random iv and correct header
 def encrypt_segment(pt, key):
     # create segment header
-    assert len(pt) + 16 < 2**16
-    header = struct.pack(">H", len(pt) + 16)
+    # length of cipher text and following tag (16 bytes) must fit into 15 bits
+    # because the android code reads it as a signed short.
+    assert len(pt) + 16 < 2**15, f"Encryption block must be less than {(2**15)-16}, was {len(pt)}"
+    header = struct.pack(">h", len(pt) + 16)
     iv = os.urandom(12) # random IV
     header += iv
 

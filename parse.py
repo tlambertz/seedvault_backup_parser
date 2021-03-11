@@ -257,6 +257,14 @@ def encrypt_segment(pt, key):
 
     return header + ct
 
+# encrypt multiple consecutive segments
+# blocksize defaults to maximum segment data size. Segment length is 2 bytes,
+# but read as a signed short, so 15bits, and subtract the 16 byte auth tag.
+def encrypt_segments(pt, key, blocksize=(2**15)-(16+1)):
+    ct = b""
+    for i in range(0, len(pt), blocksize):
+        ct += encrypt_segment(pt[i:i+blocksize], key)
+    return ct
 
 # Version Header is:
 # 1 Byte  - Version
@@ -324,7 +332,7 @@ def encrypt_backup(plainfolder, targetfolder, userkey):
             versionheader_bytes = create_versionheader(appname, key)
             ct += encrypt_segment(versionheader_bytes, userkey)
             # encrypt the plaintext
-            ct += encrypt_segment(pt, userkey)
+            ct += encrypt_segments(pt, userkey)
 
             with open(f"{targetfolder}/kv/{appname}/{keyb64.replace('=', '')}", "wb") as f:
                 f.write(ct)

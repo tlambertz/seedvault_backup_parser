@@ -26,7 +26,7 @@ Re-encryption is currently only implemented for the key-value part of backups, n
 ## Wifi Key Import
 You can create a backup, modify it, and restore it back to the device. This allows to bulk-add wifi passwords without root access.
 
-__WARNING__: I have tested this only for wifi passwords and do not entierely understand why the `@pm@` metadata needs to be present. [Googles Documentation](https://developer.android.com/guide/topics/data/testingbackup#TestingBackup) states `This action stops your app and wipes its data before performing the restore operation`. This does not happen for wifi passwords. The new ones simply get added to the store, no old ones are deleted. But things might go wrong!
+__WARNING__: I have tested this only for wifi passwords and do not entirely understand why the `@pm@` metadata needs to be present. [Googles Documentation](https://developer.android.com/guide/topics/data/testingbackup#TestingBackup) states `This action stops your app and wipes its data before performing the restore operation`. This does not happen for wifi passwords. The new ones simply get added to the store, no old ones are deleted. But things might go wrong!
 
 ```sh
 # create a 'fake' plaintext backup
@@ -34,14 +34,14 @@ mkdir -p toencrypt/kv/com.android.providers.settings
 mkdir -p toencrypt/kv/@pm@
 
 # copy package manager metadata from decrypted backup, required for restoring backups
-cp decrypted/kv/@pm@/meta_QG1ldGFA toencrypt/kv/@pm@/meta_QG1ldGFA
+cp decrypted/kv/@pm@/meta_QG1ldGFA toencrypt/kv/@pm@/meta.QG1ldGFA
 
 # wifi passwords live in com.android.providers.settings
 # copy metadata and old passwords
-cp decrypted/kv/@pm@/com.android.providers.settings_Y29tLmFuZHJvaWQucHJvdmlkZXJzLnNldHRpbmdz \
-   toencrypt/kv/@pm@/com.android.providers.settings_Y29tLmFuZHJvaWQucHJvdmlkZXJzLnNldHRpbmdz
-cp decrypted/kv/com.android.providers.settings/wifinewconfig_d2lmaV9uZXdfY29uZmln \
-   toencrypt/kv/com.android.providers.settings/wifinewconfig_d2lmaV9uZXdfY29uZmln
+cp decrypted/kv/@pm@/com.android.providers.settings.Y29tLmFuZHJvaWQucHJvdmlkZXJzLnNldHRpbmdz \
+   toencrypt/kv/@pm@/com.android.providers.settings.Y29tLmFuZHJvaWQucHJvdmlkZXJzLnNldHRpbmdz
+cp decrypted/kv/com.android.providers.settings/wifinewconfig.d2lmaV9uZXdfY29uZmln \
+   toencrypt/kv/com.android.providers.settings/wifinewconfig.d2lmaV9uZXdfY29uZmln
 
 # modify the old passwords file
 
@@ -50,9 +50,9 @@ cp decrypted/kv/com.android.providers.settings/wifinewconfig_d2lmaV9uZXdfY29uZml
 
 # you know should have the following directory sturcture:
 #   toencrypt/.backup.metadata
-#   toencrypt/kv/com.android.providers.settings/wifinewconfig_d2lmaV9uZXdfY29uZmln
-#   toencrypt/kv/@pm@/com.android.providers.settings_Y29tLmFuZHJvaWQucHJvdmlkZXJzLnNldHRpbmdz
-#   toencrypt/kv/@pm@/meta_QG1ldGFA
+#   toencrypt/kv/com.android.providers.settings/wifinewconfig.d2lmaV9uZXdfY29uZmln
+#   toencrypt/kv/@pm@/com.android.providers.settings.Y29tLmFuZHJvaWQucHJvdmlkZXJzLnNldHRpbmdz
+#   toencrypt/kv/@pm@/meta.QG1ldGFA
 
 # encrypt the fake backup with the same key the device uses. Output folder has to be numeric only and match the token
 ./parse.py encrypt toencrypt 1234

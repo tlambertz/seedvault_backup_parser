@@ -2,6 +2,8 @@
 
 This is a tool to decrypt and (partially) re-encrypt the android backups make by [Seedvault](https://github.com/stevesoltys/seedvault/).
 
+**Note**: this tool only supports v0 backups. Use [jackwilsdon/seedvault-extractor](https://github.com/jackwilsdon/seedvault-extractor) for v1 backups.
+
 ## Requirements
 For the AES decryption, the python dependency `pycryptodome` is needed.
 Script only tested on Linux.
